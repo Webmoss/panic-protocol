@@ -1,8 +1,15 @@
-# Panic Protocol
+# 🚨 Panic Protocol — EthGlobal HackMoney 2026
 
-Panic Protocol is an emergency stop button for hacked wallets—a dapp that lets users quickly secure their assets when a compromise is suspected.
+Emergency stop button for hacked wallets that still works after your ETH is drained: prepaid PANIC tokens + gasless relay.
 
-## Project overview
+**Problem**: No ETH → no gas → locked out of your own rescue.  
+**Solution**: Buy PANIC tokens upfront; when drained, sign once (no gas), relay executes and burns PANIC.
+
+→ **Full project overview**: [PROJECT.md](./PROJECT.md) — problem, solution, dual-path system, contracts, token economics, relay, user flows, demo script, roadmap.
+
+---
+
+## Project overview (this repo)
 
 - **Stack:** React Router 7, React 19, TypeScript, Vite, Tailwind CSS 4
 - **UI:** Radix UI primitives, shadcn/ui (Button), Lucide icons, Tailwind + tw-animate
