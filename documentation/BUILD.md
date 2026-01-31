@@ -15,10 +15,11 @@ This document is the build tracker and task source of truth for the MVP.
 
 ### Days 3–4 — Frontend Core
 
-- Wallet connect + network gating
-- Safe address + approval flow
-- Read PANIC balance + approvals (hard-coded tokens)
-- Status UI: Protected vs At Risk
+- UI shell with shadcn components (Card, Button, Badge, Alert) [1]
+- Wallet connect stub + network gating UI
+- Safe address + approval flow UI (Input, Button, Card)
+- Wallet status UI: balances + approvals (Card/Table)
+- Status states: Protected vs At Risk (Badge/Alert)
 
 ### Days 5–6 — Relay + Gasless
 
