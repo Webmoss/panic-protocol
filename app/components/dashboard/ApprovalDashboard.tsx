@@ -62,7 +62,11 @@ const approvals = [
 const approvalsCount = approvals.length;
 const totalValueAtRisk = "$0";
 
-export function ApprovalDashboard() {
+type ApprovalDashboardProps = {
+  isOnSepolia: boolean;
+};
+
+export function ApprovalDashboard({ isOnSepolia }: ApprovalDashboardProps) {
   return (
     <Card>
       <CardHeader className="gap-4">
@@ -75,7 +79,9 @@ export function ApprovalDashboard() {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">Switch Network</Button>
+              <Button variant="outline" disabled={!isOnSepolia}>
+                Switch Network
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem>Ethereum (Mainnet)</DropdownMenuItem>
@@ -84,7 +90,10 @@ export function ApprovalDashboard() {
           </DropdownMenu>
         </div>
         <div className="flex flex-col gap-3">
-          <Input placeholder="Search accounts by address or ENS" />
+          <Input
+            placeholder="Search accounts by address or ENS"
+            disabled={!isOnSepolia}
+          />
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Badge variant="secondary">EOA</Badge>
             <Badge variant="outline">Connected</Badge>
@@ -110,7 +119,7 @@ export function ApprovalDashboard() {
           <TabsContent value="approvals" className="space-y-3">
             <div className="grid gap-3 lg:grid-cols-[180px_1fr_220px]">
               <Select defaultValue="newest">
-                <SelectTrigger>
+                <SelectTrigger disabled={!isOnSepolia}>
                   <SelectValue placeholder="Sort" />
                 </SelectTrigger>
                 <SelectContent>
@@ -119,9 +128,12 @@ export function ApprovalDashboard() {
                   <SelectItem value="risk">Highest Risk</SelectItem>
                 </SelectContent>
               </Select>
-              <Input placeholder="Search by approved spender address" />
+              <Input
+                placeholder="Search by approved spender address"
+                disabled={!isOnSepolia}
+              />
               <Select defaultValue="all">
-                <SelectTrigger>
+                <SelectTrigger disabled={!isOnSepolia}>
                   <SelectValue placeholder="Filters" />
                 </SelectTrigger>
                 <SelectContent>
@@ -133,7 +145,7 @@ export function ApprovalDashboard() {
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled={!isOnSepolia}>
                 Revoke Selected
               </Button>
               <span className="text-xs text-muted-foreground">
@@ -142,7 +154,14 @@ export function ApprovalDashboard() {
             </div>
 
             <div className="rounded-xl border bg-muted/40">
-              {approvals.length === 0 ? (
+              {!isOnSepolia ? (
+                <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    Wrong network selected
+                  </span>
+                  <span>Switch to Sepolia to view approvals.</span>
+                </div>
+              ) : approvals.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-sm text-muted-foreground">
                   <span className="font-medium text-foreground">
                     No approvals found
@@ -156,7 +175,7 @@ export function ApprovalDashboard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">
-                        <Checkbox />
+                        <Checkbox disabled={!isOnSepolia} />
                       </TableHead>
                       <TableHead>Asset</TableHead>
                       <TableHead>Type</TableHead>
@@ -171,7 +190,7 @@ export function ApprovalDashboard() {
                     {approvals.map((approval) => (
                       <TableRow key={approval.asset}>
                         <TableCell>
-                          <Checkbox />
+                        <Checkbox disabled={!isOnSepolia} />
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">{approval.asset}</div>
@@ -191,7 +210,11 @@ export function ApprovalDashboard() {
                           {approval.updated}
                         </TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={!isOnSepolia}
+                          >
                             Revoke
                           </Button>
                         </TableCell>

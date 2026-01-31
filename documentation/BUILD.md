@@ -20,6 +20,8 @@ This document is the build tracker and task source of truth for the MVP.
 - Safe address + approval flow UI (Input, Button, Card)
 - Wallet status UI: balances + approvals (Card/Table)
 - Status states: Protected vs At Risk (Badge/Alert)
+- Approvals table empty state + totals aligned with rows
+- Disable actions when on wrong network (Sepolia gating)
 
 ### Days 5–6 — Relay + Gasless
 
@@ -31,6 +33,7 @@ This document is the build tracker and task source of truth for the MVP.
 
 - Uniswap swap flow (or faucet stub)
 - Errors/loading/success UI
+- Setup gating in UI (hide PANIC until setup complete)
 - End-to-end demo run
 
 ### Day 9 — Submission
@@ -75,3 +78,14 @@ If all five boxes are checked, **you ship**.
 - **Test tokens**: 2–3 ERC-20s deployed; user holds balances
 - **Approvals**: User pre-approved PanicVault for each test token
 - **Drain simulation**: User ETH is reduced to ~0 before gasless demo
+
+---
+
+## Frontend QA Checklist
+
+- [x] Wallet connect state (connected / not connected) displays correctly
+- [x] Wrong network banner shows and disables actions
+- [x] Setup gating hides PANIC until setup complete
+- [x] Approvals table empty state renders
+- [x] Totals match displayed approvals
+- [x] PANIC button disabled when setup incomplete
