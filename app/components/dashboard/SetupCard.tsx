@@ -12,10 +12,31 @@ import {
 import { Input } from "~/components/ui/input";
 import { Separator } from "~/components/ui/separator";
 
-export function SetupCard() {
-  const step1Status = "ready";
-  const step2Status = "ready";
-  const step3Status = "ready";
+type SetupStatus = "ready" | "pending" | "done" | "error";
+
+type SetupCardProps = {
+  isConnected: boolean;
+  safeAddress: string;
+  step1Status: SetupStatus;
+  step2Status: SetupStatus;
+  step3Status: SetupStatus;
+  onBuy: () => void;
+  onSafeAddressChange: (value: string) => void;
+  onSaveSafeAddress: () => void;
+  onApprove: () => void;
+};
+
+export function SetupCard({
+  isConnected,
+  safeAddress,
+  step1Status,
+  step2Status,
+  step3Status,
+  onBuy,
+  onSafeAddressChange,
+  onSaveSafeAddress,
+  onApprove,
+}: SetupCardProps) {
 
   return (
     <Card className="border-neutral-800 bg-neutral-950 text-white">
@@ -44,8 +65,9 @@ export function SetupCard() {
                 size="sm"
                 variant="outline"
                 className="mt-2 w-full border-white bg-white text-black hover:bg-white/90"
+                disabled={!isConnected || step1Status === "done"}
               >
-                Buy Now
+                {step1Status === "done" ? "Purchased" : "Buy Now"}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
@@ -68,7 +90,9 @@ export function SetupCard() {
                   </label>
                   <Input placeholder="PANIC amount" />
                 </div>
-                <Button variant="default">Open Uniswap (Stub)</Button>
+                <Button variant="default" onClick={onBuy}>
+                  Mark as Purchased
+                </Button>
               </div>
               <p className="text-xs text-muted-foreground">
                 Swap execution will be wired once the Uniswap integration is
@@ -88,14 +112,18 @@ export function SetupCard() {
           <div className="mt-3 space-y-2">
             <Input
               placeholder="0x... or ENS name"
+              value={safeAddress}
+              onChange={(event) => onSafeAddressChange(event.target.value)}
               className="border-neutral-700 bg-neutral-950/80 text-white placeholder:text-white/40"
             />
             <Button
               size="sm"
               variant="outline"
               className="w-full border-white bg-white text-black hover:bg-white/90"
+              disabled={!isConnected || step2Status === "done" || !safeAddress}
+              onClick={onSaveSafeAddress}
             >
-              Save Safe Address
+              {step2Status === "done" ? "Saved" : "Save Safe Address"}
             </Button>
           </div>
         </div>
@@ -114,8 +142,10 @@ export function SetupCard() {
               size="sm"
               variant="outline"
               className="w-full border-white bg-white text-black hover:bg-white/90"
+              disabled={!isConnected || step3Status === "done"}
+              onClick={onApprove}
             >
-              Approve
+              {step3Status === "done" ? "Approved" : "Approve"}
             </Button>
           </div>
         </div>

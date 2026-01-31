@@ -15,13 +15,13 @@ This document is the build tracker and task source of truth for the MVP.
 
 ### Days 3–4 — Frontend Core
 
-- UI shell with shadcn components (Card, Button, Badge, Alert) [1]
-- Wallet connect stub + network gating UI
-- Safe address + approval flow UI (Input, Button, Card)
-- Wallet status UI: balances + approvals (Card/Table)
-- Status states: Protected vs At Risk (Badge/Alert)
-- Approvals table empty state + totals aligned with rows
-- Disable actions when on wrong network (Sepolia gating)
+- [x] UI shell with shadcn components (Card, Button, Badge, Alert) [1]
+- [x] Wallet connect stub + network gating UI
+- [x] Safe address + approval flow UI (Input, Button, Card)
+- [x] Wallet status UI: balances + approvals (Card/Table)
+- [x] Status states: Protected vs At Risk (Badge/Alert)
+- [x] Approvals table empty state + totals aligned with rows
+- [x] Disable actions when on wrong network (Sepolia gating)
 
 ### Days 5–6 — Relay + Gasless
 
@@ -31,10 +31,10 @@ This document is the build tracker and task source of truth for the MVP.
 
 ### Days 7–8 — Purchase + Polish
 
-- Uniswap swap flow (or faucet stub)
-- Errors/loading/success UI
-- Setup gating in UI (hide PANIC until setup complete)
-- End-to-end demo run
+- [x] Uniswap swap flow (or faucet stub)
+- [x] Errors/loading/success UI
+- [x] Setup gating in UI (hide PANIC until setup complete)
+- [ ] End-to-end demo run
 
 ### Day 9 — Submission
 
@@ -89,3 +89,25 @@ If all five boxes are checked, **you ship**.
 - [x] Approvals table empty state renders
 - [x] Totals match displayed approvals
 - [x] PANIC button disabled when setup incomplete
+
+---
+
+## Work Completed (Additions)
+
+- [x] Wagmi + RainbowKit integration (providers + styles)
+- [x] Live ETH balance via Wagmi `useBalance`
+- [x] Live USDC balance via `useReadContract`
+- [x] Chain-aware network labels (Wagmi `useChains`)
+- [x] Switch Network banner wired to RainbowKit modal
+- [x] Connect Wallet button wired to RainbowKit
+- [x] Setup flow interactive stubs (buy/save/approve)
+
+---
+
+## Next Tasks (Priority)
+
+- [ ] Add PANIC token addresses to `.env` and wire balance read
+- [ ] Replace mock approvals with on-chain approvals (token list + spender list)
+- [ ] Add safe address persistence (local storage or contract config)
+- [ ] Add approval + revoke actions (transaction wiring)
+- [ ] End-to-end demo run on Sepolia

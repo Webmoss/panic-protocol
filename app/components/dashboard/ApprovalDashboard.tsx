@@ -20,53 +20,32 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Checkbox } from "~/components/ui/checkbox";
 
-const approvals = [
-  {
-    asset: "ETHG",
-    amount: "2,000,000 ETHG",
-    type: "Token",
-    approvedAmount: "No approvals",
-    valueAtRisk: "$0",
-    spender: "—",
-    updated: "—",
-  },
-  {
-    asset: "SUPERDOG",
-    amount: "5 SUPERDOG",
-    type: "Token",
-    approvedAmount: "No approvals",
-    valueAtRisk: "$0",
-    spender: "—",
-    updated: "—",
-  },
-  {
-    asset: "UniLife",
-    amount: "5 UniLife",
-    type: "Token",
-    approvedAmount: "No approvals",
-    valueAtRisk: "$0",
-    spender: "—",
-    updated: "—",
-  },
-  {
-    asset: "VIBESTR",
-    amount: "11,351.727 VIBESTR",
-    type: "Token",
-    approvedAmount: "No approvals",
-    valueAtRisk: "$0",
-    spender: "—",
-    updated: "—",
-  },
-];
-
-const approvalsCount = approvals.length;
-const totalValueAtRisk = "$0";
+export type ApprovalItem = {
+  asset: string;
+  amount: string;
+  type: string;
+  approvedAmount: string;
+  valueAtRisk: string;
+  spender: string;
+  updated: string;
+};
 
 type ApprovalDashboardProps = {
   isOnSepolia: boolean;
+  approvals: ApprovalItem[];
 };
 
-export function ApprovalDashboard({ isOnSepolia }: ApprovalDashboardProps) {
+const sumValueAtRisk = (items: ApprovalItem[]) => {
+  const total = items.reduce((acc, item) => {
+    const numeric = Number(item.valueAtRisk.replace(/[$,]/g, ""));
+    return acc + (Number.isFinite(numeric) ? numeric : 0);
+  }, 0);
+  return `$${total.toFixed(0)}`;
+};
+
+export function ApprovalDashboard({ isOnSepolia, approvals }: ApprovalDashboardProps) {
+  const approvalsCount = approvals.length;
+  const totalValueAtRisk = sumValueAtRisk(approvals);
   return (
     <Card>
       <CardHeader className="gap-4">
