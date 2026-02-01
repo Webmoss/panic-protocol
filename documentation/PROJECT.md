@@ -12,7 +12,7 @@
 
 **The Solution**: Panic Protocol combines an emergency stop button with a self-funding mechanism. Users purchase PANIC tokens upfront as "emergency gas credits" that can be redeemed through a gasless relay when they have no ETH.
 
-**Key Innovation**: Even with ZERO ETH, you can still revoke approvals and sweep ERC-20 funds to a safe backup wallet by burning PANIC tokens through a gasless relay system.
+**Key Innovation**: Even with ZERO ETH, you can still sweep ERC-20 funds to a safe backup wallet by burning PANIC tokens through a gasless relay system.
 
 ---
 
@@ -82,7 +82,7 @@ Click PANIC → Sign gasless message → Relay executes → Burns PANIC tokens �
 - **Cost**: 300 PANIC tokens (~$30)
 - **User ETH**: Zero required
 
-Execution mode is selected **automatically** based on wallet ETH balance.
+Execution mode is selected by the user (direct or relay) based on their ETH balance.
 
 ---
 
@@ -108,9 +108,8 @@ Execution mode is selected **automatically** based on wallet ETH balance.
 
 ### What Happens When You Click PANIC
 
-1. **Revoke All Approvals** — Identifies active token approvals, revokes each (allowance → 0), stops further draining.
-2. **Sweep Remaining Assets** — Transfers ERC-20 balances to safe address (v1: ERC-20 only; NFT and ETH sweep in later phase).
-3. **Confirmation** — Transaction hash, block explorer link, summary of what was saved.
+1. **Sweep Remaining Assets** — Transfers ERC-20 balances to safe address (v1: ERC-20 only; NFT and ETH sweep in later phase).
+2. **Confirmation** — Transaction hash, block explorer link, summary of what was saved.
 
 > Panic Protocol **cannot stop transactions already in the mempool**.
 
@@ -130,7 +129,6 @@ Relay API
 PanicVault
    │
    ├─ burns PANIC (relay mode)
-   ├─ revokes approvals
    └─ sweeps tokens to safe address
 ```
 
@@ -149,8 +147,8 @@ PanicVault
 
 #### 2. PanicVault.sol (Main Logic)
 
-- **Direct panic**: User calls `panic(tokens, spenders, safeAddress)` and pays gas; cooldown applies.
-- **Relay panic**: Relay calls `panicWithRelay(...)` with user’s EIP-712 signature; contract verifies signature, burns PANIC from user, executes same revoke + sweep logic.
+- **Direct panic**: User calls `panicDirect(tokens, spenders)` and pays gas.
+- **Relay panic**: Relay calls `panicRelay(...)` with user’s EIP-712 signature; contract verifies signature, burns PANIC from user, executes sweep logic.
 - EIP-712 domain and typehash for structured signing
 - Nonce + deadline to prevent replay
 - Minimum PANIC for relay (e.g. 300 tokens)
@@ -169,8 +167,7 @@ PanicVault
 #### 3. PanicRelay.sol (Relay Coordinator)
 
 - Only authorized relay addresses can call `executeRelay(...)`
-- Forwards to `PanicVault.panicWithRelay(...)`
-- Tracks gas used; reimburses relay from treasury with markup (e.g. 20%)
+- Forwards to `PanicVault.panicRelay(...)`
 - Owner can add/remove relay addresses
 
 *(Full Solidity snippets are in the repo or can be added under `contracts/` when implemented.)*
@@ -179,7 +176,7 @@ PanicVault
 
 ## Build & Execution
 
-Build steps, checklists, and demo prep live in `Buidl.md`.
+Build steps, checklists, and demo prep live in `documentation/BUILD.md`.
 
 ---
 
@@ -241,11 +238,8 @@ User (No ETH) → Signs EIP-712 message → Relay API
 - **Framework**: React 19, React Router v7, TypeScript, Vite
 - **Styling**: Tailwind CSS 4, Radix UI, Lucide icons, class-variance-authority, clsx, tailwind-merge, tw-animate
 - **Rendering**: SSR by default; can be deployed as static/SPA
-- **Web3 (planned)**: Wagmi + Viem + RainbowKit (to be added)
-
-*(Current app: welcome/landing, Connect button; dashboard, purchase flow, panic execution UI to be built.)*
-
----
+- **Web3**: Wagmi + Viem + RainbowKit
+- **UX**: Approvals + history tab (Etherscan-backed)
 
 ## Sponsor Protocols We Can Utilize
 
@@ -265,11 +259,11 @@ Connect wallet → Purchase PANIC tokens (recommended 1,000) → Set safe addres
 
 ### Emergency — You Have ETH
 
-Click PANIC → Direct execution → Review revoke + sweep → Sign tx, pay gas → Done; PANIC balance unchanged.
+Click PANIC → Direct execution → Review sweep → Sign tx, pay gas → Done; PANIC balance unchanged.
 
 ### Emergency — You Have NO ETH
 
-Click PANIC → Relay mode → Review revoke + sweep, cost in PANIC → Sign EIP-712 message (no gas) → Relay executes, PANIC burned → Done.
+Click PANIC → Relay mode → Review sweep, cost in PANIC → Sign EIP-712 message (no gas) → Relay executes, PANIC burned → Done.
 
 ---
 
@@ -278,11 +272,10 @@ Click PANIC → Relay mode → Review revoke + sweep, cost in PANIC → Sign EIP
 1. **Problem**: Show wallet with approvals; simulate ETH drained → “locked out.”
 2. **Traditional solutions fail**: Revoke.cash needs gas; new wallet/contact exchange too slow.
 3. **Setup**: Buy PANIC, set safe address; “protected.”
-4. **Hack again**: Same drain; click PANIC → relay mode → sign message → relay executes → approvals revoked, tokens swept.
+4. **Hack again**: Same drain; click PANIC → relay mode → sign message → relay executes → tokens swept.
 5. **Reveal**: Before/after table; “Cost: 300 PANIC. Saved: $5,000 in tokens.”
 
 ---
-
 
 ## Technical Challenges & Solutions
 

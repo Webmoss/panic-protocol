@@ -1,35 +1,37 @@
 import { useChainModal } from "@rainbow-me/rainbowkit";
-import {
-  formatUnits,
-  isAddress,
-  maxUint256,
-  zeroAddress,
-  type Address,
-} from "viem";
+import { isAddress, maxUint256, zeroAddress, type Address } from "viem";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useAccount,
-  useBalance,
   useChainId,
   useChains,
   useEnsAddress,
-  useReadContract,
-  useReadContracts,
   usePublicClient,
+  useSignTypedData,
   useWriteContract,
 } from "wagmi";
 import { mainnet, sepolia } from "wagmi/chains";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
-import { ApprovalDashboard } from "~/components/dashboard/ApprovalDashboard";
+import {
+  ApprovalDashboard,
+  type ApprovalHistoryItem,
+} from "~/components/dashboard/ApprovalDashboard";
 import { Header } from "~/components/layout/Header";
 import { PanicCard } from "~/components/dashboard/PanicCard";
 import { SetupCard } from "~/components/dashboard/SetupCard";
 import { WalletStatusCard } from "~/components/dashboard/WalletStatusCard";
+import { usePanicFlow } from "~/hooks/usePanicFlow";
+import { useWalletData } from "~/hooks/useWalletData";
+import { ERC20_ABI, RELAY_ABI, VAULT_ABI } from "~/lib/contracts";
+import { buildTokenList, getUsdcAddress } from "~/lib/tokens";
 
 export function Welcome() {
   const isProduction = import.meta.env.PROD;
+  const explorerBaseUrl = isProduction
+    ? "https://etherscan.io"
+    : "https://sepolia.etherscan.io";
   const USDC_SEPOLIA_ADDRESS = import.meta.env
     .VITE_USDC_SEPOLIA_ADDRESS as Address | undefined;
   const USDC_MAINNET_ADDRESS = import.meta.env
@@ -52,65 +54,11 @@ export function Welcome() {
     .VITE_PANIC_RELAY_SEPOLIA_ADDRESS as Address | undefined;
   const PANIC_RELAY_MAINNET_ADDRESS = import.meta.env
     .VITE_PANIC_RELAY_MAINNET_ADDRESS as Address | undefined;
-  const USDC_DECIMALS = 6;
-  const ERC20_ABI = [
-    {
-      name: "balanceOf",
-      type: "function",
-      stateMutability: "view",
-      inputs: [{ name: "owner", type: "address" }],
-      outputs: [{ name: "balance", type: "uint256" }],
-    },
-    {
-      name: "allowance",
-      type: "function",
-      stateMutability: "view",
-      inputs: [
-        { name: "owner", type: "address" },
-        { name: "spender", type: "address" },
-      ],
-      outputs: [{ name: "remaining", type: "uint256" }],
-    },
-    {
-      name: "approve",
-      type: "function",
-      stateMutability: "nonpayable",
-      inputs: [
-        { name: "spender", type: "address" },
-        { name: "amount", type: "uint256" },
-      ],
-      outputs: [{ name: "success", type: "bool" }],
-    },
-  ] as const;
-  const VAULT_ABI = [
-    {
-      name: "setSafeAddress",
-      type: "function",
-      stateMutability: "nonpayable",
-      inputs: [{ name: "safeAddress", type: "address" }],
-      outputs: [],
-    },
-    {
-      name: "safeAddresses",
-      type: "function",
-      stateMutability: "view",
-      inputs: [{ name: "user", type: "address" }],
-      outputs: [{ name: "", type: "address" }],
-    },
-    {
-      name: "panicDirect",
-      type: "function",
-      stateMutability: "nonpayable",
-      inputs: [
-        { name: "tokens", type: "address[]" },
-        { name: "spenders", type: "address[]" },
-      ],
-      outputs: [],
-    },
-  ] as const;
+
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
+  const { signTypedDataAsync } = useSignTypedData();
   const chainId = useChainId();
   const chains = useChains();
   const { openChainModal } = useChainModal();
@@ -121,9 +69,12 @@ export function Welcome() {
   const networkLabel = isConnected
     ? activeChain?.name ?? "Unknown network"
     : "No network";
-  const usdcTokenAddress = isProduction
-    ? USDC_MAINNET_ADDRESS
-    : USDC_SEPOLIA_ADDRESS;
+  
+  const usdcTokenAddress = getUsdcAddress({
+    isProduction,
+    usdcMainnetAddress: USDC_MAINNET_ADDRESS,
+    usdcSepoliaAddress: USDC_SEPOLIA_ADDRESS,
+  });
   const usdcLabel = "USDC";
   const panicTokenAddress = isProduction
     ? PANIC_MAINNET_ADDRESS
@@ -134,124 +85,51 @@ export function Welcome() {
   const panicRelayAddress = isProduction
     ? PANIC_RELAY_MAINNET_ADDRESS
     : PANIC_RELAY_SEPOLIA_ADDRESS;
-  const tokenList = useMemo(() => {
-    if (isProduction) {
-      return usdcTokenAddress
-        ? [
-            {
-              symbol: "USDC",
-              address: usdcTokenAddress,
-              decimals: 6,
-              isStable: true,
-            },
-          ]
-        : [];
-    }
-    return [
-      TEST_USDC_SEPOLIA_ADDRESS
-        ? {
-            symbol: "tUSDC",
-            address: TEST_USDC_SEPOLIA_ADDRESS,
-            decimals: 6,
-            isStable: true,
-          }
-        : null,
-      TEST_MOSS_SEPOLIA_ADDRESS
-        ? {
-            symbol: "tMOSS",
-            address: TEST_MOSS_SEPOLIA_ADDRESS,
-            decimals: 18,
-            isStable: false,
-          }
-        : null,
-      TEST_GUARD_SEPOLIA_ADDRESS
-        ? {
-            symbol: "tGUARD",
-            address: TEST_GUARD_SEPOLIA_ADDRESS,
-            decimals: 18,
-            isStable: false,
-          }
-        : null,
-    ].filter((token): token is NonNullable<typeof token> => token !== null);
-  }, [
-    isProduction,
-    usdcTokenAddress,
-    TEST_USDC_SEPOLIA_ADDRESS,
-    TEST_MOSS_SEPOLIA_ADDRESS,
-    TEST_GUARD_SEPOLIA_ADDRESS,
-  ]);
-  const tokenReadContracts = useMemo(() => {
-    if (!address || !panicVaultAddress || tokenList.length === 0) {
-      return [];
-    }
-    return tokenList.flatMap((token) => [
-      {
-        address: token.address,
-        abi: ERC20_ABI,
-        functionName: "balanceOf",
-        args: [address],
-      },
-      {
-        address: token.address,
-        abi: ERC20_ABI,
-        functionName: "allowance",
-        args: [address, panicVaultAddress],
-      },
-    ]);
-  }, [address, panicVaultAddress, tokenList, ERC20_ABI]);
-  const { data: ethBalanceData } = useBalance({
+
+  const tokenList = useMemo(
+    () =>
+      buildTokenList({
+        isProduction,
+        usdcMainnetAddress: USDC_MAINNET_ADDRESS,
+        usdcSepoliaAddress: USDC_SEPOLIA_ADDRESS,
+        testUsdcAddress: TEST_USDC_SEPOLIA_ADDRESS,
+        testMossAddress: TEST_MOSS_SEPOLIA_ADDRESS,
+        testGuardAddress: TEST_GUARD_SEPOLIA_ADDRESS,
+      }),
+    [
+      isProduction,
+      USDC_MAINNET_ADDRESS,
+      USDC_SEPOLIA_ADDRESS,
+      TEST_USDC_SEPOLIA_ADDRESS,
+      TEST_MOSS_SEPOLIA_ADDRESS,
+      TEST_GUARD_SEPOLIA_ADDRESS,
+    ]
+  );
+  const {
+    ethBalance,
+    hasEthBalance,
+    usdcBalance,
+    panicBalance,
+    approvals,
+    approvalsCount,
+    tokenStats,
+    hasApprovedVault,
+    extraTokenBalances,
+    approvalTokenLabels,
+    safeAddressOnChain,
+    nonceData,
+    refetchTokenReads,
+    refetchSafeAddress,
+  } = useWalletData({
     address,
-    query: { enabled: !!address },
+    isConnected,
+    isOnTargetNetwork,
+    usdcTokenAddress,
+    panicTokenAddress,
+    panicVaultAddress,
+    tokenList,
+    usdcLabel,
   });
-  const { data: usdcRawBalance } = useReadContract({
-    address:
-      usdcTokenAddress ?? "0x0000000000000000000000000000000000000000",
-    abi: ERC20_ABI,
-    functionName: "balanceOf",
-    args: address ? [address] : undefined,
-    query: { enabled: !!address && !!usdcTokenAddress && isOnTargetNetwork },
-  });
-  const { data: panicRawBalance } = useReadContract({
-    address:
-      panicTokenAddress ?? "0x0000000000000000000000000000000000000000",
-    abi: ERC20_ABI,
-    functionName: "balanceOf",
-    args: address ? [address] : undefined,
-    query: { enabled: !!address && !!panicTokenAddress && isOnTargetNetwork },
-  });
-  const {
-    data: tokenReadResults,
-    refetch: refetchTokenReads,
-  } = useReadContracts({
-    contracts: tokenReadContracts,
-    allowFailure: true,
-    query: {
-      enabled:
-        !!address && !!panicVaultAddress && tokenList.length > 0 && isOnTargetNetwork,
-    },
-  });
-  const {
-    data: safeAddressOnChain,
-    refetch: refetchSafeAddress,
-  } = useReadContract({
-    address: panicVaultAddress ?? zeroAddress,
-    abi: VAULT_ABI,
-    functionName: "safeAddresses",
-    args: address ? [address] : undefined,
-    query: { enabled: !!address && !!panicVaultAddress && isOnTargetNetwork },
-  });
-  const ethBalance = ethBalanceData
-    ? Number(formatUnits(ethBalanceData.value, ethBalanceData.decimals)).toFixed(4)
-    : "0.00";
-  const hasEthBalance = ethBalanceData?.value ? ethBalanceData.value > 0n : false;
-  const usdcBalance =
-    typeof usdcRawBalance === "bigint"
-      ? Number(formatUnits(usdcRawBalance, USDC_DECIMALS)).toFixed(2)
-      : "0.00";
-  const panicBalance =
-    typeof panicRawBalance === "bigint"
-      ? Number(formatUnits(panicRawBalance, 18)).toFixed(2)
-      : "—";
   const [safeAddress, setSafeAddress] = useState("");
   const [safeAddressError, setSafeAddressError] = useState<string | undefined>(
     undefined
@@ -259,58 +137,15 @@ export function Welcome() {
   const [hasPurchasedPanic, setHasPurchasedPanic] = useState(false);
   const [isSavingSafeAddress, setIsSavingSafeAddress] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
-  const [panicStatus, setPanicStatus] = useState<
-    "idle" | "signing" | "executing" | "done" | "error"
-  >("idle");
   const previousAddressRef = useRef<string | undefined>(undefined);
-  const formatAddress = (value: string) =>
-    `${value.slice(0, 6)}...${value.slice(-4)}`;
-  const tokenStats = useMemo(
-    () =>
-      tokenList.map((token, index) => {
-        const balanceResult = tokenReadResults?.[index * 2]?.result;
-        const allowanceResult = tokenReadResults?.[index * 2 + 1]?.result;
-        return {
-          token,
-          balance: typeof balanceResult === "bigint" ? balanceResult : 0n,
-          allowance: typeof allowanceResult === "bigint" ? allowanceResult : 0n,
-        };
-      }),
-    [tokenList, tokenReadResults]
-  );
-  const approvals = useMemo(() => {
-    if (!isConnected || !isOnTargetNetwork) return [];
-    return tokenStats
-      .filter(({ allowance }) => allowance > 0n)
-      .map(({ token, balance, allowance }) => {
-        const formattedBalance = Number(
-          formatUnits(balance, token.decimals)
-        ).toFixed(2);
-        const isUnlimited = allowance === maxUint256;
-        const formattedAllowance = isUnlimited
-          ? "Unlimited"
-          : Number(formatUnits(allowance, token.decimals)).toFixed(2);
-        const valueAtRisk = token.isStable ? `$${formattedBalance}` : "$0";
-        return {
-          asset: token.symbol,
-          amount: `${formattedBalance} ${token.symbol}`,
-          type: "Token",
-          approvedAmount: isUnlimited
-            ? "Unlimited"
-            : `${formattedAllowance} ${token.symbol}`,
-          valueAtRisk,
-          spender: panicVaultAddress ? formatAddress(panicVaultAddress) : "—",
-          updated: "—",
-          tokenAddress: token.address,
-        };
-      });
-  }, [isConnected, isOnTargetNetwork, panicVaultAddress, tokenStats]);
-  const approvalsCount = approvals.length;
+  const [txHistory, setTxHistory] = useState<ApprovalHistoryItem[]>([]);
+  const lastPanicModeRef = useRef<"direct" | "relay">("direct");
   const hasSavedSafeAddress =
     typeof safeAddressOnChain === "string" && safeAddressOnChain !== zeroAddress;
-  const hasApprovedVault = tokenStats.some(({ allowance }) => allowance > 0n);
   const hasOnchainPanicBalance =
-    typeof panicRawBalance === "bigint" && panicRawBalance > 0n;
+    typeof panicBalance === "string" && panicBalance !== "—"
+      ? Number(panicBalance) > 0
+      : false;
   const canExecute = isConnected && (hasEthBalance || hasOnchainPanicBalance);
   const isSetupComplete =
     hasPurchasedPanic && hasApprovedVault && hasSavedSafeAddress;
@@ -329,20 +164,6 @@ export function Welcome() {
       ? (safeAddress as Address)
       : undefined;
 
-  const extraTokenBalances = useMemo(
-    () =>
-      tokenStats
-        .filter((tokenStat) => tokenStat.token.symbol !== usdcLabel)
-        .map(({ token, balance }) => ({
-          label: token.symbol,
-          balance: Number(formatUnits(balance, token.decimals)).toFixed(2),
-        })),
-    [tokenStats, usdcLabel]
-  );
-  const approvalTokenLabels = useMemo(
-    () => tokenList.map((token) => token.symbol),
-    [tokenList]
-  );
 
   /* Effects */
   useEffect(() => {
@@ -359,9 +180,18 @@ export function Welcome() {
       setHasPurchasedPanic(false);
       setIsSavingSafeAddress(false);
       setIsApproving(false);
-      setPanicStatus("idle");
+      setTxHistory([]);
     }
   }, [address]);
+  const addHistory = (entry: ApprovalHistoryItem) => {
+    setTxHistory((prev) => [entry, ...prev].slice(0, 20));
+  };
+
+  const updateHistoryStatus = (id: string, status: ApprovalHistoryItem["status"]) => {
+    setTxHistory((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, status } : item))
+    );
+  };
 
   useEffect(() => {
     if (safeAddressError) {
@@ -378,6 +208,15 @@ export function Welcome() {
       setSafeAddress(safeAddressOnChain);
     }
   }, [safeAddressOnChain, safeAddress]);
+
+  useEffect(() => {
+    if (!address || hasSavedSafeAddress || safeAddress) return;
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(`panic.safeAddress.${address}`);
+    if (stored) {
+      setSafeAddress(stored);
+    }
+  }, [address, hasSavedSafeAddress, safeAddress]);
 
 
   /* Handlers */
@@ -398,6 +237,12 @@ export function Welcome() {
         args: [resolvedSafeAddress],
       });
       await publicClient?.waitForTransactionReceipt({ hash });
+      if (typeof window !== "undefined" && address) {
+        window.localStorage.setItem(
+          `panic.safeAddress.${address}`,
+          resolvedSafeAddress
+        );
+      }
       await refetchSafeAddress();
     } catch (error) {
       console.error(error);
@@ -427,8 +272,9 @@ export function Welcome() {
     }
   };
 
-  const handleRevoke = async (approval: { tokenAddress?: string }) => {
+  const handleRevoke = async (approval: { tokenAddress?: string; asset?: string }) => {
     if (!panicVaultAddress || !approval.tokenAddress) return;
+    let historyId: string | undefined;
     try {
       const hash = await writeContractAsync({
         address: approval.tokenAddress as Address,
@@ -436,34 +282,71 @@ export function Welcome() {
         functionName: "approve",
         args: [panicVaultAddress, 0n],
       });
+      historyId = `revoke-${hash}`;
+      addHistory({
+        id: historyId,
+        label: `Revoke ${approval.asset ?? "token"}`,
+        hash,
+        status: "pending" as const,
+        createdAt: Date.now(),
+      });
       await publicClient?.waitForTransactionReceipt({ hash });
+      updateHistoryStatus(historyId, "confirmed");
       await refetchTokenReads();
+      return hash;
     } catch (error) {
       console.error(error);
+      if (historyId) {
+        updateHistoryStatus(historyId, "failed");
+      }
+      return undefined;
     }
   };
 
-  const handlePanicDirect = async () => {
-    if (!panicVaultAddress || tokenList.length === 0) return;
-    try {
-      setPanicStatus("signing");
-      const tokens = tokenList.map((token) => token.address);
-      const spenders = tokens.map(() => zeroAddress);
-      const hash = await writeContractAsync({
-        address: panicVaultAddress,
-        abi: VAULT_ABI,
-        functionName: "panicDirect",
-        args: [tokens, spenders],
-      });
-      setPanicStatus("executing");
-      await publicClient?.waitForTransactionReceipt({ hash });
-      await refetchTokenReads();
-      setPanicStatus("done");
-    } catch (error) {
-      console.error(error);
-      setPanicStatus("error");
-    }
+  const { panicStatus, panicTxHash, handlePanic, handlePanicDirect } =
+    usePanicFlow({
+      address,
+      chainId,
+      panicVaultAddress,
+      panicRelayAddress,
+      tokenList,
+      safeAddressOnChain:
+        typeof safeAddressOnChain === "string" ? safeAddressOnChain : undefined,
+      nonceData: typeof nonceData === "bigint" ? nonceData : undefined,
+      hasEthBalance,
+      writeContractAsync,
+      signTypedDataAsync,
+      publicClient,
+      vaultAbi: VAULT_ABI,
+      relayAbi: RELAY_ABI,
+      refetchTokenReads,
+    });
+
+  const handlePanicWithHistory = async () => {
+    lastPanicModeRef.current = hasEthBalance ? "direct" : "relay";
+    await handlePanic();
   };
+
+  useEffect(() => {
+    if (!panicTxHash || panicStatus !== "done") return;
+    const id = `panic-${panicTxHash}`;
+    setTxHistory((prev) => {
+      if (prev.some((item) => item.id === id)) return prev;
+      return [
+        {
+          id,
+          label:
+            lastPanicModeRef.current === "relay"
+              ? "PANIC (Relay)"
+              : "PANIC (Direct)",
+          hash: panicTxHash,
+          status: "confirmed" as const,
+          createdAt: Date.now(),
+        },
+        ...prev,
+      ].slice(0, 20);
+    });
+  }, [panicTxHash, panicStatus]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -473,24 +356,35 @@ export function Welcome() {
         <Card className="border-neutral-900 bg-black text-white">
           <CardContent className="flex flex-wrap items-center justify-between gap-3 p-x-4">
             <div>
-              <h1 className="text-2xl font-semibold text-white">
+              <h1 className="text-2xl font-black uppercase tracking-tight text-white">
                 Dashboard
               </h1>
               <p className="text-sm text-white/90">
-                Review and revoke risky approvals, execute PANIC Protocol to secure your wallet, if needed.
+                Inspect and revoke risky approvals to secure your wallet from risk. Hit PANIC to secure your assets.
               </p>
             </div>
             <div className="flex w-full flex-wrap justify-end gap-2 md:w-auto">
               {canExecute && (
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  className="min-w-[160px]"
-                  disabled={!isSetupComplete || !isOnTargetNetwork}
-                  onClick={handlePanicDirect}
-                >
-                  PANIC
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="min-w-[160px] border-white text-black hover:bg-white/80"
+                    disabled={!isSetupComplete || !isOnTargetNetwork}
+                    onClick={handlePanicDirect}
+                  >
+                    SWEEP
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="lg"
+                    className="min-w-[160px]"
+                    disabled={!isSetupComplete || !isOnTargetNetwork}
+                    onClick={handlePanicWithHistory}
+                  >
+                    PANIC
+                  </Button>
+                </>
               )}
             </div>
           </CardContent>
@@ -517,15 +411,22 @@ export function Welcome() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,840px)_1fr]">
           <ApprovalDashboard
             isOnTargetNetwork={isOnTargetNetwork}
+            isConnected={isConnected}
             approvals={approvals}
             onRevoke={handleRevoke}
             onSwitchNetwork={() => openChainModal?.()}
+            onRefresh={refetchTokenReads}
+            history={txHistory}
+            explorerBaseUrl={explorerBaseUrl}
           />
           <div className="flex flex-col gap-6">
-          {isSetupComplete && (
+            {isSetupComplete && (
               <PanicCard
                 panicStatus={panicStatus}
-                onConfirm={handlePanicDirect}
+                onConfirm={handlePanicWithHistory}
+                mode={hasEthBalance ? "direct" : "relay"}
+                txHash={panicTxHash}
+                explorerBaseUrl={explorerBaseUrl}
                 disabled={!isOnTargetNetwork || !isConnected}
               />
             )}
@@ -540,7 +441,7 @@ export function Welcome() {
               approvalsCount={approvalsCount}
               tokenBalances={extraTokenBalances}
             />
-            {!isSetupComplete && (
+            {isConnected && !isSetupComplete && (
               <SetupCard
                 isConnected={isConnected}
                 isOnTargetNetwork={isOnTargetNetwork}

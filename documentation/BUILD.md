@@ -29,6 +29,7 @@ This document is the build tracker and task source of truth for the MVP.
 - Relay API for `panicRelay`
 - EIP-712 signing + relay submit
 - Tx status + explorer links
+- History tab pulls recent txs from Etherscan
 
 ### Days 7–8 — Purchase + Polish
 
@@ -98,6 +99,39 @@ Latest Sepolia demo:
 
 ---
 
+## Next 7 Days Plan
+
+### Days 1–2 — Reliability + Validation
+
+- Enforce actual PANIC balance before setup step 1 completes
+- Validate all required contract addresses at runtime
+- Add user-facing errors for approval + panic failures
+
+### Days 3–4 — Network Gating + UX
+
+- Hide approvals data when on wrong network (show lock state)
+- Add basic loading states for balance + approvals reads
+- Reset local safe address on network change
+
+### Day 5 — History (Etherscan-backed)
+
+- Pull recent txs from Etherscan for approvals + PANIC
+- Sync status updates in the History tab
+
+### Day 6 — Edge Cases + QA
+
+- Handle empty token list with clear messaging
+- Confirm ENS resolution behavior by chain
+- Queue batch revokes to avoid race conditions
+
+### Day 7 — Demo Polish
+
+- Add “why disabled?” helper text for gated actions
+- Tighten setup + panic copy
+- Full end-to-end demo run
+
+---
+
 ## Work Completed (Additions)
 
 - [x] Wagmi + RainbowKit integration (providers + styles)
@@ -108,6 +142,9 @@ Latest Sepolia demo:
 - [x] Connect Wallet button wired to RainbowKit
 - [x] Setup flow interactive stubs (buy/save/approve)
 - [x] Hardhat deploy scripts for PANIC contracts (token/vault/relay)
+- [x] Live approvals + revoke actions wired to vault allowances
+- [x] Setup flow validation (ENS + address) and network gating
+- [x] Demo tokens distributed to test wallets
 
 ---
 
@@ -115,9 +152,9 @@ Latest Sepolia demo:
 
 - [x] Update PANICToken vault address to new PanicVault (call `setVault`)
 - [x] Whitelist relayer
-- [ ] Fund relay wallet with ETH
-- [ ] Add deploy script output + addresses to docs
-- [ ] Replace mock approvals with on-chain approvals (token list + spender list)
-- [ ] Add safe address persistence (local storage or contract config)
-- [ ] Add approval + sweep actions (transaction wiring)
-- [ ] End-to-end demo run on Sepolia
+- [x] Fund relay wallet with ETH
+- [x] Add deploy script output + addresses to docs
+- [x] Replace mock approvals with on-chain approvals (token list + spender list)
+- [x] Add safe address persistence (local storage or contract config)
+- [x] Add approval + sweep actions (transaction wiring)
+- [x] Wire gasless relay in UI (panicRelay flow)

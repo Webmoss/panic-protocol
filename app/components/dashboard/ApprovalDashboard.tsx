@@ -3,6 +3,7 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -24,11 +25,23 @@ export type ApprovalItem = {
   tokenAddress?: string;
 };
 
+export type ApprovalHistoryItem = {
+  id: string;
+  label: string;
+  hash: string;
+  status: "pending" | "confirmed" | "failed";
+  createdAt: number;
+};
+
 type ApprovalDashboardProps = {
   isOnTargetNetwork: boolean;
+  isConnected: boolean;
   approvals: ApprovalItem[];
-  onRevoke?: (approval: ApprovalItem) => void;
+  onRevoke?: (approval: ApprovalItem) => Promise<string | undefined>;
   onSwitchNetwork?: () => void;
+  onRefresh?: () => void;
+  history?: ApprovalHistoryItem[];
+  explorerBaseUrl?: string;
 };
 
 const sumValueAtRisk = (items: ApprovalItem[]) => {
@@ -41,12 +54,19 @@ const sumValueAtRisk = (items: ApprovalItem[]) => {
 
 export function ApprovalDashboard({
   isOnTargetNetwork,
+  isConnected,
   approvals,
   onRevoke,
   onSwitchNetwork,
+  onRefresh,
+  history = [],
+  explorerBaseUrl = "https://sepolia.etherscan.io",
 }: ApprovalDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [rowStatus, setRowStatus] = useState<
+    Record<string, "idle" | "pending" | "done" | "error">
+  >({});
   const approvalsCount = approvals.length;
   const filteredApprovals = useMemo(() => {
     if (!searchQuery.trim()) return approvals;
@@ -98,23 +118,49 @@ export function ApprovalDashboard({
     setSelectedKeys(new Set());
   };
 
+  const handleRevokeRow = async (approval: ApprovalItem) => {
+    if (!onRevoke) return;
+    const key = getApprovalKey(approval);
+    setRowStatus((prev) => ({ ...prev, [key]: "pending" }));
+    try {
+      const hash = await onRevoke(approval);
+      if (hash) {
+        setRowStatus((prev) => ({ ...prev, [key]: "done" }));
+        window.setTimeout(() => {
+          setRowStatus((prev) => ({ ...prev, [key]: "idle" }));
+        }, 1500);
+      } else {
+        setRowStatus((prev) => ({ ...prev, [key]: "idle" }));
+      }
+    } catch (error) {
+      console.error(error);
+      setRowStatus((prev) => ({ ...prev, [key]: "error" }));
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="space-y-1">
-            <CardTitle className="text-xl">Approvals</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Inspect and revoke risky approvals to secure your wallet from risk.
-            </p>
+            <CardTitle className="text-lg font-black uppercase tracking-tight">Approvals</CardTitle>
           </div>
-          <Button
-            variant="outline"
-            disabled={!onSwitchNetwork}
-            onClick={onSwitchNetwork}
-          >
-            Switch Network
-          </Button>
+          <div className="flex items-center gap-2">
+            {onRefresh && (
+              <Button variant="outline" onClick={onRefresh}>
+                Refresh
+              </Button>
+            )}
+            {isConnected && (
+              <Button
+                variant="outline"
+                disabled={!onSwitchNetwork}
+                onClick={onSwitchNetwork}
+              >
+                Switch Network
+              </Button>
+            )}
+          </div>
         </div>
         <div className="flex flex-col gap-2">
           <Input
@@ -126,7 +172,12 @@ export function ApprovalDashboard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-3">
+        <Tabs defaultValue="approvals" className="space-y-3">
+          <TabsList>
+            <TabsTrigger value="approvals">Approvals</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+          </TabsList>
+          <TabsContent value="approvals" className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Button
               variant="outline"
@@ -149,12 +200,19 @@ export function ApprovalDashboard({
           </div>
 
           <div className="w-full rounded-xl border bg-muted/40">
-            {!isOnTargetNetwork ? (
+            {!isConnected ? (
+              <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  Wallet not connected
+                </span>
+                <span>Connect your wallet to view approvals.</span>
+              </div>
+            ) : !isOnTargetNetwork ? (
               <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">
                   Wrong network selected
                 </span>
-                <span>Switch to the target network to view your wallets approvals.</span>
+                <span>Switch to the target network to view your approvals.</span>
               </div>
             ) : filteredApprovals.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-sm text-muted-foreground">
@@ -190,6 +248,7 @@ export function ApprovalDashboard({
                 <TableBody>
                   {filteredApprovals.map((approval) => {
                     const key = getApprovalKey(approval);
+                    const status = rowStatus[key] ?? "idle";
                     return (
                       <TableRow key={key}>
                         <TableCell>
@@ -222,10 +281,17 @@ export function ApprovalDashboard({
                           <Button
                             variant="outline"
                             size="sm"
-                            disabled={!isOnTargetNetwork || !onRevoke}
-                            onClick={() => onRevoke?.(approval)}
+                            className="min-w-[86px]"
+                            disabled={
+                              !isOnTargetNetwork || !onRevoke || status === "pending"
+                            }
+                            onClick={() => handleRevokeRow(approval)}
                           >
-                            Revoke
+                            {status === "done"
+                              ? "Revoked"
+                              : status === "error"
+                                ? "Retry"
+                                : "Revoke"}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -235,7 +301,50 @@ export function ApprovalDashboard({
               </Table>
             )}
           </div>
-        </div>
+        </TabsContent>
+        <TabsContent value="history">
+          <div className="rounded-xl border bg-muted/40">
+            {history.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  No recent activity
+                </span>
+                <span>Revoke or panic actions will appear here.</span>
+              </div>
+            ) : (
+              <Table className="w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Transaction</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {history.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.label}</TableCell>
+                      <TableCell className="capitalize">
+                        {item.status}
+                      </TableCell>
+                      <TableCell>
+                        <a
+                          className="text-sm text-foreground underline underline-offset-4"
+                          href={`${explorerBaseUrl}/tx/${item.hash}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {item.hash.slice(0, 6)}...{item.hash.slice(-4)}
+                        </a>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
