@@ -1,14 +1,8 @@
+import { useMemo, useState } from "react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import {
   Table,
   TableBody,
@@ -17,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Checkbox } from "~/components/ui/checkbox";
 
 export type ApprovalItem = {
@@ -28,11 +21,14 @@ export type ApprovalItem = {
   valueAtRisk: string;
   spender: string;
   updated: string;
+  tokenAddress?: string;
 };
 
 type ApprovalDashboardProps = {
-  isOnSepolia: boolean;
+  isOnTargetNetwork: boolean;
   approvals: ApprovalItem[];
+  onRevoke?: (approval: ApprovalItem) => void;
+  onSwitchNetwork?: () => void;
 };
 
 const sumValueAtRisk = (items: ApprovalItem[]) => {
@@ -43,133 +39,167 @@ const sumValueAtRisk = (items: ApprovalItem[]) => {
   return `$${total.toFixed(0)}`;
 };
 
-export function ApprovalDashboard({ isOnSepolia, approvals }: ApprovalDashboardProps) {
+export function ApprovalDashboard({
+  isOnTargetNetwork,
+  approvals,
+  onRevoke,
+  onSwitchNetwork,
+}: ApprovalDashboardProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const approvalsCount = approvals.length;
-  const totalValueAtRisk = sumValueAtRisk(approvals);
+  const filteredApprovals = useMemo(() => {
+    if (!searchQuery.trim()) return approvals;
+    const query = searchQuery.trim().toLowerCase();
+    return approvals.filter((approval) => {
+      return (
+        approval.asset.toLowerCase().includes(query) ||
+        approval.spender.toLowerCase().includes(query)
+      );
+    });
+  }, [approvals, searchQuery]);
+  const totalValueAtRisk = sumValueAtRisk(filteredApprovals);
+  const selectedCount = selectedKeys.size;
+  const allSelected =
+    filteredApprovals.length > 0 &&
+    filteredApprovals.every((approval) =>
+      selectedKeys.has(getApprovalKey(approval))
+    );
+
+  const handleToggleAll = (checked: boolean) => {
+    if (!checked) {
+      setSelectedKeys(new Set());
+      return;
+    }
+    const next = new Set<string>();
+    filteredApprovals.forEach((approval) => {
+      next.add(getApprovalKey(approval));
+    });
+    setSelectedKeys(next);
+  };
+
+  const handleToggleOne = (key: string, checked: boolean) => {
+    const next = new Set(selectedKeys);
+    if (checked) {
+      next.add(key);
+    } else {
+      next.delete(key);
+    }
+    setSelectedKeys(next);
+  };
+
+  const handleRevokeSelected = () => {
+    if (!onRevoke) return;
+    filteredApprovals.forEach((approval) => {
+      if (selectedKeys.has(getApprovalKey(approval))) {
+        onRevoke(approval);
+      }
+    });
+    setSelectedKeys(new Set());
+  };
+
   return (
     <Card>
       <CardHeader className="gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="space-y-1">
             <CardTitle className="text-xl">Approvals</CardTitle>
             <p className="text-sm text-muted-foreground">
               Inspect and revoke risky approvals to secure your wallet from risk.
             </p>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={!isOnSepolia}>
-                Switch Network
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Ethereum (Mainnet)</DropdownMenuItem>
-              <DropdownMenuItem>Sepolia (Testnet)</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="outline"
+            disabled={!onSwitchNetwork}
+            onClick={onSwitchNetwork}
+          >
+            Switch Network
+          </Button>
         </div>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           <Input
             placeholder="Search accounts by address or ENS"
-            disabled={!isOnSepolia}
+            disabled={!isOnTargetNetwork}
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
           />
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="secondary">EOA</Badge>
-            <Badge variant="outline">Connected</Badge>
-            <span>0.002 ETH ($5.42)</span>
-            <span>0x9569...ED85</span>
-          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4 pt-6">
-        <Tabs defaultValue="approvals">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <TabsList>
-              <TabsTrigger value="approvals">Approvals</TabsTrigger>
-            </TabsList>
+      <CardContent className="space-y-4">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={
+                !isOnTargetNetwork || selectedCount === 0 || !onRevoke
+              }
+              onClick={handleRevokeSelected}
+            >
+              Revoke Selected{selectedCount > 0 ? ` (${selectedCount})` : ""}
+            </Button>
             <div className="flex gap-2">
-              <Badge variant="outline">Total Approvals: {approvalsCount}</Badge>
-              <Badge variant="outline">
-                Total Value at Risk: {totalValueAtRisk}
+              <Badge className="bg-red-600 text-white">
+                Total Approvals: {filteredApprovals.length}
+              </Badge>
+              <Badge className="bg-black text-white">
+                Total at Risk: {totalValueAtRisk}
               </Badge>
             </div>
           </div>
 
-          <TabsContent value="approvals" className="space-y-3">
-            <div className="grid gap-3 lg:grid-cols-[180px_1fr_220px]">
-              <Select defaultValue="newest">
-                <SelectTrigger disabled={!isOnSepolia}>
-                  <SelectValue placeholder="Sort" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest to Oldest</SelectItem>
-                  <SelectItem value="oldest">Oldest to Newest</SelectItem>
-                  <SelectItem value="risk">Highest Risk</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="Search by approved spender address"
-                disabled={!isOnSepolia}
-              />
-              <Select defaultValue="all">
-                <SelectTrigger disabled={!isOnSepolia}>
-                  <SelectValue placeholder="Filters" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Showing everything</SelectItem>
-                  <SelectItem value="tokens">Tokens only</SelectItem>
-                  <SelectItem value="high-risk">High risk</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Button variant="outline" size="sm" disabled={!isOnSepolia}>
-                Revoke Selected
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                Last updated: newest to oldest
-              </span>
-            </div>
-
-            <div className="rounded-xl border bg-muted/40">
-              {!isOnSepolia ? (
-                <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">
-                    Wrong network selected
-                  </span>
-                  <span>Switch to Sepolia to view approvals.</span>
-                </div>
-              ) : approvals.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">
-                    No approvals found
-                  </span>
-                  <span>
-                    Connect a wallet or switch networks to view approvals.
-                  </span>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10">
-                        <Checkbox disabled={!isOnSepolia} />
-                      </TableHead>
-                      <TableHead>Asset</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Approved Amount</TableHead>
-                      <TableHead>Value at Risk</TableHead>
-                      <TableHead>Approved Spender</TableHead>
-                      <TableHead>Last Updated</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {approvals.map((approval) => (
-                      <TableRow key={approval.asset}>
+          <div className="w-full rounded-xl border bg-muted/40">
+            {!isOnTargetNetwork ? (
+              <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  Wrong network selected
+                </span>
+                <span>Switch to the target network to view your wallets approvals.</span>
+              </div>
+            ) : filteredApprovals.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  No approvals found
+                </span>
+                <span>
+                  Connect a wallet or switch networks to view approvals.
+                </span>
+              </div>
+            ) : (
+              <Table className="w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        disabled={!isOnTargetNetwork}
+                        checked={allSelected}
+                        onCheckedChange={(checked) =>
+                          handleToggleAll(checked === true)
+                        }
+                      />
+                    </TableHead>
+                    <TableHead>Asset</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Approved Amount</TableHead>
+                    <TableHead>Value at Risk</TableHead>
+                    <TableHead>Approved Spender</TableHead>
+                    <TableHead>Last Updated</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredApprovals.map((approval) => {
+                    const key = getApprovalKey(approval);
+                    return (
+                      <TableRow key={key}>
                         <TableCell>
-                        <Checkbox disabled={!isOnSepolia} />
+                          <Checkbox
+                            disabled={!isOnTargetNetwork}
+                            checked={selectedKeys.has(key)}
+                            onCheckedChange={(checked) =>
+                              handleToggleOne(key, checked === true)
+                            }
+                          />
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">{approval.asset}</div>
@@ -192,20 +222,24 @@ export function ApprovalDashboard({ isOnSepolia, approvals }: ApprovalDashboardP
                           <Button
                             variant="outline"
                             size="sm"
-                            disabled={!isOnSepolia}
+                            disabled={!isOnTargetNetwork || !onRevoke}
+                            onClick={() => onRevoke?.(approval)}
                           >
                             Revoke
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
 }
+
+const getApprovalKey = (approval: ApprovalItem) =>
+  `${approval.asset}-${approval.spender}-${approval.approvedAmount}`;

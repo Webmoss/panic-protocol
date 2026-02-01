@@ -3,8 +3,15 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 
-export function PanicCard() {
-  const panicStatus: "idle" | "signing" | "executing" | "done" | "error" = "idle";
+type PanicStatus = "idle" | "signing" | "executing" | "done" | "error";
+
+type PanicCardProps = {
+  panicStatus: PanicStatus;
+  onConfirm: () => void;
+  disabled?: boolean;
+};
+
+export function PanicCard({ panicStatus, onConfirm, disabled }: PanicCardProps) {
 
   return (
     <Card className="border-red-600 bg-red-600 text-white">
@@ -24,7 +31,7 @@ export function PanicCard() {
             <AlertDescription>
               {panicStatus === "signing" && "This signature is gasless."}
               {panicStatus === "executing" && "Relay is paying gas on your behalf."}
-              {panicStatus === "done" && "Approvals revoked and assets swept."}
+              {panicStatus === "done" && "Assets have been swept to your safe address."}
               {panicStatus === "error" && "Please retry or check relay status."}
             </AlertDescription>
           </Alert>
@@ -42,7 +49,8 @@ export function PanicCard() {
         </div>
         <Button
           className="w-full bg-white text-black hover:bg-white/90"
-          disabled={panicStatus !== "idle"}
+          disabled={disabled || panicStatus !== "idle"}
+          onClick={onConfirm}
         >
           Confirm PANIC
         </Button>

@@ -8,10 +8,11 @@ This document is the build tracker and task source of truth for the MVP.
 
 ### Days 1–2 — Contracts + Testnet
 
-- Finalize v1 scope (ERC-20 only, single relay, fixed pricing)
-- Implement `PANICToken`, `PanicVault`, `PanicRelay`
-- Unit tests for burn, approvals revoke, sweep, EIP-712
-- Deploy + verify on Sepolia
+- [x] Finalize v1 scope (ERC-20 only, single relay, fixed pricing)
+- [x] Implement `PANICToken`, `PanicVault`, `PanicRelay`
+- [x] Unit tests for burn, approvals revoke, sweep, EIP-712
+- [x] Deploy on Sepolia
+- [x] Deploy test tokens (tUSDC, tMOSS, tGUARD)
 
 ### Days 3–4 — Frontend Core
 
@@ -34,7 +35,7 @@ This document is the build tracker and task source of truth for the MVP.
 - [x] Uniswap swap flow (or faucet stub)
 - [x] Errors/loading/success UI
 - [x] Setup gating in UI (hide PANIC until setup complete)
-- [ ] End-to-end demo run
+- [x] End-to-end demo run
 
 ### Day 9 — Submission
 
@@ -45,27 +46,32 @@ This document is the build tracker and task source of truth for the MVP.
 
 ## Scope (v1)
 
-- **Include**: ERC-20 revoke + sweep, EIP-712 gasless relay, single trusted relay, fixed pricing.
+- **Include**: ERC-20 sweep, EIP-712 gasless relay, single trusted relay, fixed pricing.
 - **Mock**: Token list (2–3 test ERC-20s), pricing (no oracle), treasury accounting.
 - **Exclude**: NFTs, ETH sweep, cross-chain, DAO/governance, custom token discovery.
 
 ## Build Checklist
 
-- [ ] PANICToken deployed
-- [ ] PanicVault deployed
-- [ ] Relay funded with ETH
-- [ ] Hard-coded test ERC-20 tokens
-- [ ] One successful gasless rescue on testnet
+- [x] PANICToken deployed
+- [x] PanicVault deployed
+- [x] PanicRelay deployed
+- [x] Relay funded with ETH
+- [x] Hard-coded test ERC-20 tokens
+- [x] One successful gasless rescue on testnet
 
 If all five boxes are checked, **you ship**.
+
+Latest Sepolia demo:
+- Gasless relay tx: 0x1b5648b3c3b68ed8bb7afa3e34ba04e0387a7094c888e6f9399da0618123bd57
+- Safe address: 0x58071A24e6115e599622b16Ad1A29657D2430ebA
 
 ---
 
 ## MVP Acceptance Criteria (Judges)
 
 - **Setup completed**: User sets a safe address and grants vault approval.
-- **Direct rescue**: `panicDirect()` revokes approvals + sweeps ERC-20 with user-paid gas.
-- **Gasless rescue**: `panicRelay()` succeeds with zero user ETH; PANIC burned; relay pays gas.
+- **Direct rescue**: `panicDirect()` sweeps ERC-20 with user-paid gas.
+- **Gasless rescue**: `panicRelay()` sweeps ERC-20 with zero user ETH; PANIC burned; relay pays gas.
 - **UI confirmation**: Before/after approvals + balances are shown clearly.
 - **Proof**: Transaction hash and explorer links are visible for both flows.
 
@@ -101,13 +107,17 @@ If all five boxes are checked, **you ship**.
 - [x] Switch Network banner wired to RainbowKit modal
 - [x] Connect Wallet button wired to RainbowKit
 - [x] Setup flow interactive stubs (buy/save/approve)
+- [x] Hardhat deploy scripts for PANIC contracts (token/vault/relay)
 
 ---
 
 ## Next Tasks (Priority)
 
-- [ ] Add PANIC token addresses to `.env` and wire balance read
+- [x] Update PANICToken vault address to new PanicVault (call `setVault`)
+- [x] Whitelist relayer
+- [ ] Fund relay wallet with ETH
+- [ ] Add deploy script output + addresses to docs
 - [ ] Replace mock approvals with on-chain approvals (token list + spender list)
 - [ ] Add safe address persistence (local storage or contract config)
-- [ ] Add approval + revoke actions (transaction wiring)
+- [ ] Add approval + sweep actions (transaction wiring)
 - [ ] End-to-end demo run on Sepolia
