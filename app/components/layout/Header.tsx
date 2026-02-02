@@ -34,9 +34,8 @@ export function Header() {
 
             return (
               <Button
-                variant="outline"
                 size="lg"
-                className="min-w-[160px] border-white bg-white text-black hover:bg-white/90"
+                className="min-w-[180px] bg-red-700 text-white hover:bg-red-600"
                 onClick={handleClick}
               >
                 {label}

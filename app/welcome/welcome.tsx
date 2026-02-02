@@ -11,27 +11,26 @@ import {
   useWriteContract,
 } from "wagmi";
 import { mainnet, sepolia } from "wagmi/chains";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Button } from "~/components/ui/button";
-import { Card, CardContent } from "~/components/ui/card";
-import {
-  ApprovalDashboard,
-  type ApprovalHistoryItem,
-} from "~/components/dashboard/ApprovalDashboard";
+import { type ApprovalHistoryItem } from "~/components/dashboard/ApprovalDashboard";
 import { Header } from "~/components/layout/Header";
-import { PanicCard } from "~/components/dashboard/PanicCard";
-import { SetupCard } from "~/components/dashboard/SetupCard";
-import { WalletStatusCard } from "~/components/dashboard/WalletStatusCard";
+import { DashboardView } from "~/components/dashboard/DashboardView";
+import { LandingBackground } from "~/components/landing/LandingBackground";
+import { LandingFaqs } from "~/components/landing/LandingFaqs";
+import { LandingHero } from "~/components/landing/LandingHero";
+import { LandingSteps } from "~/components/landing/LandingSteps";
 import { usePanicFlow } from "~/hooks/usePanicFlow";
 import { useWalletData } from "~/hooks/useWalletData";
 import { ERC20_ABI, RELAY_ABI, VAULT_ABI } from "~/lib/contracts";
 import { buildTokenList, getUsdcAddress } from "~/lib/tokens";
 
+
 export function Welcome() {
+
   const isProduction = import.meta.env.PROD;
   const explorerBaseUrl = isProduction
     ? "https://etherscan.io"
     : "https://sepolia.etherscan.io";
+
   const USDC_SEPOLIA_ADDRESS = import.meta.env
     .VITE_USDC_SEPOLIA_ADDRESS as Address | undefined;
   const USDC_MAINNET_ADDRESS = import.meta.env
@@ -105,6 +104,7 @@ export function Welcome() {
       TEST_GUARD_SEPOLIA_ADDRESS,
     ]
   );
+  
   const {
     ethBalance,
     hasEthBalance,
@@ -349,132 +349,70 @@ export function Welcome() {
   }, [panicTxHash, panicStatus]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      {!isConnected && <LandingBackground />}
       <Header />
 
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 py-8">
-        <Card className="border-neutral-900 bg-black text-white">
-          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-x-4">
-            <div>
-              <h1 className="text-2xl font-black uppercase tracking-tight text-white">
-                Dashboard
-              </h1>
-              <p className="text-sm text-white/90">
-                Inspect and revoke risky approvals to secure your wallet from risk. Hit PANIC to secure your assets.
-              </p>
-            </div>
-            <div className="flex w-full flex-wrap justify-end gap-2 md:w-auto">
-              {canExecute && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="min-w-[160px] border-white text-black hover:bg-white/80"
-                    disabled={!isSetupComplete || !isOnTargetNetwork}
-                    onClick={handlePanicDirect}
-                  >
-                    SWEEP
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="lg"
-                    className="min-w-[160px]"
-                    disabled={!isSetupComplete || !isOnTargetNetwork}
-                    onClick={handlePanicWithHistory}
-                  >
-                    PANIC
-                  </Button>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {showWrongNetwork && (
-          <Alert variant="destructive" className="w-full">
-            <AlertDescription className="flex w-full flex-wrap items-center justify-between gap-3 text-base font-semibold">
-              <span>
-                Switch to {targetNetworkLabel} to test execute PANIC actions on Testnet only!
-              </span>
-              <Button
-                variant="destructive"
-                size="lg"
-                className="border-red-600 bg-red-600 text-white hover:bg-red-500"
-                onClick={() => openChainModal?.()}
-              >
-                Switch Network
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,840px)_1fr]">
-          <ApprovalDashboard
-            isOnTargetNetwork={isOnTargetNetwork}
-            isConnected={isConnected}
-            approvals={approvals}
-            onRevoke={handleRevoke}
-            onSwitchNetwork={() => openChainModal?.()}
-            onRefresh={refetchTokenReads}
-            history={txHistory}
-            explorerBaseUrl={explorerBaseUrl}
-          />
-          <div className="flex flex-col gap-6">
-            {isSetupComplete && (
-              <PanicCard
-                panicStatus={panicStatus}
-                onConfirm={handlePanicWithHistory}
-                mode={hasEthBalance ? "direct" : "relay"}
-                txHash={panicTxHash}
-                explorerBaseUrl={explorerBaseUrl}
-                disabled={!isOnTargetNetwork || !isConnected}
-              />
-            )}
-            <WalletStatusCard
-              isConnected={isConnected}
-              networkLabel={networkLabel}
-              address={address}
-              ethBalance={ethBalance}
-              usdcBalance={usdcBalance}
-              usdcLabel={usdcLabel}
-              panicBalance={panicBalance}
-              approvalsCount={approvalsCount}
-              tokenBalances={extraTokenBalances}
-            />
-            {isConnected && !isSetupComplete && (
-              <SetupCard
-                isConnected={isConnected}
-                isOnTargetNetwork={isOnTargetNetwork}
-                safeAddress={safeAddress}
-                resolvedSafeAddress={resolvedSafeAddress}
-                safeAddressError={safeAddressError}
-                isSavingSafeAddress={isSavingSafeAddress}
-                isApproving={isApproving}
-                step1Status={hasPurchasedPanic ? "done" : "ready"}
-                step2Status={
-                  isSavingSafeAddress
-                    ? "pending"
-                    : hasSavedSafeAddress
-                      ? "done"
-                      : "ready"
-                }
-                step3Status={
-                  isApproving
-                    ? "pending"
-                    : hasApprovedVault
-                      ? "done"
-                      : "ready"
-                }
-                approvalTokens={approvalTokenLabels}
-                onBuy={() => setHasPurchasedPanic(true)}
-                onSafeAddressChange={setSafeAddress}
-                onSaveSafeAddress={handleSaveSafeAddress}
-                onApprove={handleApproveAll}
-              />
-            )}
-          </div>
-        </div>
-      </main>
+      {!isConnected ? (
+        <main className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-4 py-12">
+          <LandingHero />
+          <LandingSteps />
+          <LandingFaqs />
+        </main>
+      ) : (
+        <DashboardView
+          isConnected={isConnected}
+          isOnTargetNetwork={isOnTargetNetwork}
+          targetNetworkLabel={targetNetworkLabel}
+          openChainModal={openChainModal}
+          canExecute={canExecute}
+          isSetupComplete={isSetupComplete}
+          approvals={approvals}
+          onRevoke={handleRevoke}
+          onRefresh={refetchTokenReads}
+          history={txHistory}
+          explorerBaseUrl={explorerBaseUrl}
+          panicStatus={panicStatus}
+          panicTxHash={panicTxHash}
+          onPanic={handlePanicWithHistory}
+          onPanicDirect={handlePanicDirect}
+          hasEthBalance={hasEthBalance}
+          networkLabel={networkLabel}
+          address={address}
+          ethBalance={ethBalance}
+          usdcBalance={usdcBalance}
+          usdcLabel={usdcLabel}
+          panicBalance={panicBalance}
+          approvalsCount={approvalsCount}
+          tokenBalances={extraTokenBalances}
+          showSetupCard={isConnected && !isSetupComplete}
+          safeAddress={safeAddress}
+          resolvedSafeAddress={resolvedSafeAddress}
+          safeAddressError={safeAddressError}
+          isSavingSafeAddress={isSavingSafeAddress}
+          isApproving={isApproving}
+          step1Status={hasPurchasedPanic ? "done" : "ready"}
+          step2Status={
+            isSavingSafeAddress
+              ? "pending"
+              : hasSavedSafeAddress
+                ? "done"
+                : "ready"
+          }
+          step3Status={
+            isApproving
+              ? "pending"
+              : hasApprovedVault
+                ? "done"
+                : "ready"
+          }
+          approvalTokens={approvalTokenLabels}
+          onBuy={() => setHasPurchasedPanic(true)}
+          onSafeAddressChange={setSafeAddress}
+          onSaveSafeAddress={handleSaveSafeAddress}
+          onApprove={handleApproveAll}
+        />
+      )}
     </div>
   );
 }
