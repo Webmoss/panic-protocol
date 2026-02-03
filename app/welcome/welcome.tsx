@@ -5,7 +5,6 @@ import {
   useAccount,
   useChainId,
   useChains,
-  useEnsAddress,
   usePublicClient,
   useSignTypedData,
   useWriteContract,
@@ -21,6 +20,7 @@ import { LandingSteps } from "~/components/landing/LandingSteps";
 import { usePanicFlow } from "~/hooks/usePanicFlow";
 import { useWalletData } from "~/hooks/useWalletData";
 import { ERC20_ABI, RELAY_ABI, VAULT_ABI } from "~/lib/contracts";
+import { isEnsName, useEnsProfile } from "~/lib/ens";
 import { buildTokenList, getUsdcAddress } from "~/lib/tokens";
 
 
@@ -61,6 +61,7 @@ export function Welcome() {
   const chainId = useChainId();
   const chains = useChains();
   const { openChainModal } = useChainModal();
+
   const targetChain = isProduction ? mainnet : sepolia;
   const isOnTargetNetwork = isConnected && chainId === targetChain.id;
   const targetNetworkLabel = targetChain.name;
@@ -85,25 +86,41 @@ export function Welcome() {
     ? PANIC_RELAY_MAINNET_ADDRESS
     : PANIC_RELAY_SEPOLIA_ADDRESS;
 
-  const tokenList = useMemo(
-    () =>
-      buildTokenList({
-        isProduction,
-        usdcMainnetAddress: USDC_MAINNET_ADDRESS,
-        usdcSepoliaAddress: USDC_SEPOLIA_ADDRESS,
-        testUsdcAddress: TEST_USDC_SEPOLIA_ADDRESS,
-        testMossAddress: TEST_MOSS_SEPOLIA_ADDRESS,
-        testGuardAddress: TEST_GUARD_SEPOLIA_ADDRESS,
-      }),
-    [
+  const tokenList = useMemo(() => {
+    const baseList = buildTokenList({
       isProduction,
-      USDC_MAINNET_ADDRESS,
-      USDC_SEPOLIA_ADDRESS,
-      TEST_USDC_SEPOLIA_ADDRESS,
-      TEST_MOSS_SEPOLIA_ADDRESS,
-      TEST_GUARD_SEPOLIA_ADDRESS,
-    ]
-  );
+      usdcMainnetAddress: USDC_MAINNET_ADDRESS,
+      usdcSepoliaAddress: USDC_SEPOLIA_ADDRESS,
+      testUsdcAddress: TEST_USDC_SEPOLIA_ADDRESS,
+      testMossAddress: TEST_MOSS_SEPOLIA_ADDRESS,
+      testGuardAddress: TEST_GUARD_SEPOLIA_ADDRESS,
+    });
+
+    if (!panicTokenAddress) return baseList;
+
+    const hasPanic = baseList.some(
+      (token) => token.address.toLowerCase() === panicTokenAddress.toLowerCase()
+    );
+    if (hasPanic) return baseList;
+
+    return [
+      ...baseList,
+      {
+        symbol: "PANIC",
+        address: panicTokenAddress,
+        decimals: 18,
+        isStable: false,
+      },
+    ];
+  }, [
+    isProduction,
+    USDC_MAINNET_ADDRESS,
+    USDC_SEPOLIA_ADDRESS,
+    TEST_USDC_SEPOLIA_ADDRESS,
+    TEST_MOSS_SEPOLIA_ADDRESS,
+    TEST_GUARD_SEPOLIA_ADDRESS,
+    panicTokenAddress,
+  ]);
   
   const {
     ethBalance,
@@ -130,6 +147,15 @@ export function Welcome() {
     tokenList,
     usdcLabel,
   });
+
+  const panicTokenList = useMemo(
+    () =>
+      tokenStats
+        .filter(({ balance, allowance }) => balance > 0n && allowance > 0n)
+        .map(({ token }) => token),
+    [tokenStats]
+  );
+  
   const [safeAddress, setSafeAddress] = useState("");
   const [safeAddressError, setSafeAddressError] = useState<string | undefined>(
     undefined
@@ -152,14 +178,9 @@ export function Welcome() {
   const showWrongNetwork = isConnected && !isOnTargetNetwork;
   
   /* ENS Resolving */
-  const isEnsName = safeAddress.trim().toLowerCase().endsWith(".eth");
-  const { data: ensResolvedAddress } = useEnsAddress({
-    name: isEnsName ? safeAddress.trim() : undefined,
-    chainId: mainnet.id,
-    query: { enabled: isEnsName && !!safeAddress.trim() },
-  });
-  const resolvedSafeAddress = isEnsName
-    ? (ensResolvedAddress as Address | undefined)
+  const ensProfile = useEnsProfile(safeAddress, mainnet.id);
+  const resolvedSafeAddress = ensProfile.resolvedAddress
+    ? ensProfile.resolvedAddress
     : isAddress(safeAddress)
       ? (safeAddress as Address)
       : undefined;
@@ -224,7 +245,7 @@ export function Welcome() {
     if (!panicVaultAddress || !safeAddress) return;
     if (!resolvedSafeAddress) {
       setSafeAddressError(
-        isEnsName ? "ENS name could not be resolved." : "Invalid address."
+        isEnsName(safeAddress) ? "ENS name could not be resolved." : "Invalid address."
       );
       return;
     }
@@ -309,7 +330,7 @@ export function Welcome() {
       chainId,
       panicVaultAddress,
       panicRelayAddress,
-      tokenList,
+      tokenList: panicTokenList,
       safeAddressOnChain:
         typeof safeAddressOnChain === "string" ? safeAddressOnChain : undefined,
       nonceData: typeof nonceData === "bigint" ? nonceData : undefined,
@@ -388,6 +409,8 @@ export function Welcome() {
           showSetupCard={isConnected && !isSetupComplete}
           safeAddress={safeAddress}
           resolvedSafeAddress={resolvedSafeAddress}
+          ensName={ensProfile.isEnsName ? safeAddress.trim() : undefined}
+          ensRecords={ensProfile.records}
           safeAddressError={safeAddressError}
           isSavingSafeAddress={isSavingSafeAddress}
           isApproving={isApproving}

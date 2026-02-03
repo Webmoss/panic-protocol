@@ -4,6 +4,7 @@ import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { ShieldCheck } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -21,6 +22,8 @@ export type ApprovalItem = {
   approvedAmount: string;
   valueAtRisk: string;
   spender: string;
+  spenderAddress?: string;
+  isPanicVaultApproval?: boolean;
   updated: string;
   tokenAddress?: string;
 };
@@ -38,6 +41,7 @@ type ApprovalDashboardProps = {
   isConnected: boolean;
   approvals: ApprovalItem[];
   onRevoke?: (approval: ApprovalItem) => Promise<string | undefined>;
+  onApproveAll?: () => void;
   onSwitchNetwork?: () => void;
   onRefresh?: () => void;
   history?: ApprovalHistoryItem[];
@@ -57,6 +61,7 @@ export function ApprovalDashboard({
   isConnected,
   approvals,
   onRevoke,
+  onApproveAll,
   onSwitchNetwork,
   onRefresh,
   history = [],
@@ -146,6 +151,15 @@ export function ApprovalDashboard({
             <CardTitle className="text-lg font-black uppercase tracking-tight">Approvals</CardTitle>
           </div>
           <div className="flex items-center gap-2">
+            {isConnected && (
+              <Button
+                variant="outline"
+                disabled={!isOnTargetNetwork || !onApproveAll}
+                onClick={onApproveAll}
+              >
+                Approve Panic Vault
+              </Button>
+            )}
             {onRefresh && (
               <Button variant="outline" onClick={onRefresh}>
                 Refresh
@@ -241,7 +255,7 @@ export function ApprovalDashboard({
                     <TableHead>Approved Amount</TableHead>
                     <TableHead>Value at Risk</TableHead>
                     <TableHead>Approved Spender</TableHead>
-                    <TableHead>Last Updated</TableHead>
+                    <TableHead>Approval Type</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -274,8 +288,15 @@ export function ApprovalDashboard({
                         <TableCell className="text-muted-foreground">
                           {approval.spender}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {approval.updated}
+                        <TableCell>
+                          {approval.isPanicVaultApproval ? (
+                            <Badge className="bg-red-600 text-white">
+                              <ShieldCheck className="mr-1 h-3.5 w-3.5" />
+                              PanicVault
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">Other</Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Button

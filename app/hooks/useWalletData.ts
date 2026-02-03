@@ -142,7 +142,9 @@ export const useWalletData = ({
             ? "Unlimited"
             : `${formattedAllowance} ${token.symbol}`,
           valueAtRisk,
-          spender: panicVaultAddress ? formatAddress(panicVaultAddress) : "—",
+                  spender: panicVaultAddress ? formatAddress(panicVaultAddress) : "—",
+                  spenderAddress: panicVaultAddress,
+                  isPanicVaultApproval: true,
           updated: "—",
           tokenAddress: token.address,
         };

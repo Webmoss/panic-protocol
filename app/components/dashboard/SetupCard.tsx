@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
+import type { EnsTextRecord } from "~/lib/ens";
 
 type SetupStatus = "ready" | "pending" | "done" | "error";
 
@@ -18,6 +19,8 @@ type SetupCardProps = {
   isOnTargetNetwork: boolean;
   safeAddress: string;
   resolvedSafeAddress?: string;
+  ensName?: string;
+  ensRecords?: EnsTextRecord[];
   safeAddressError?: string;
   isSavingSafeAddress?: boolean;
   isApproving?: boolean;
@@ -36,6 +39,8 @@ export function SetupCard({
   isOnTargetNetwork,
   safeAddress,
   resolvedSafeAddress,
+  ensName,
+  ensRecords = [],
   safeAddressError,
   isSavingSafeAddress = false,
   isApproving = false,
@@ -146,6 +151,33 @@ export function SetupCard({
                 ) : (
                   <span>Resolved: {resolvedSafeAddress}</span>
                 )}
+              </div>
+            )}
+            {ensName && ensRecords.length > 0 && (
+              <div className="rounded-md border border-neutral-800 bg-neutral-950/80 p-2 text-xs text-white/70">
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-white/60">
+                  ENS Records
+                </div>
+                <div className="space-y-1">
+                  {ensRecords.map((record) => (
+                    <div key={record.key} className="flex justify-between gap-2">
+                      <span className="text-white/50">{record.label}</span>
+                      <span className="truncate text-white/80">{record.value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 rounded border border-red-500/30 bg-red-500/10 px-2 py-1 text-[11px] text-red-100">
+                  Panic Protocol uses ENS text records (e.g. <span className="font-semibold">com.panic.safe</span>) for
+                  emergency contacts.
+                </div>
+                <a
+                  href="https://docs.ens.domains/web/records/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex text-[11px] text-red-200 underline underline-offset-4"
+                >
+                  How to set ENS text records
+                </a>
               </div>
             )}
             <Button

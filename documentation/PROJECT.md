@@ -251,6 +251,14 @@ Based on the official HackMoney 2026 partners list, these are the protocols we c
 - **Uniswap Foundation**: Use Uniswap pools for PANIC purchase and liquidity; power the "Buy PANIC" UI with a Uniswap swap flow.
 - **LI.FI**: Optional bridge/onramp to acquire PANIC or ETH from other chains for setup (not used during emergency flow).
 
+### ENS Prize Targets
+
+**Integrate ENS — $3,500 (pool prize)**  
+Requirement: include ENS-specific code (not just RainbowKit) using live lookups (no hard-coded values). Demo must be functional with video or live link; code open source.
+
+**Most Creative ENS for DeFi — $1,500**  
+Requirement: ENS must clearly improve the product (not an afterthought), use real ENS data, and be demoed live or via video with open-source code.
+
 ## User Flows (Summary)
 
 ### First-Time Setup

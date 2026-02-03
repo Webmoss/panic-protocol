@@ -124,6 +124,16 @@ Latest Sepolia demo:
 - Confirm ENS resolution behavior by chain
 - Queue batch revokes to avoid race conditions
 
+---
+
+## ENS Prize Checklist
+
+- Add ENS-specific code beyond RainbowKit (e.g., wagmi ENS hooks)
+- Use live ENS reads (no hard-coded values)
+- Ensure ENS improves product flow (e.g., safe address ENS + ENS record display)
+- Record functional demo video or live link
+- Keep code open-source and accessible
+
 ### Day 7 — Demo Polish
 
 - Add “why disabled?” helper text for gated actions

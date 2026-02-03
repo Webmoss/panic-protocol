@@ -4,7 +4,7 @@ const steps = [
   {
     title: "Step 1",
     subtitle: "Prepare",
-    text: "Buy PANIC tokens as emergency gas credits.",
+    text: "Buy PANIC tokens to use as your emergency gas credits.",
     icon: CreditCard,
   },
   {
@@ -16,7 +16,7 @@ const steps = [
   {
     title: "Step 3",
     subtitle: "Execute",
-    text: "Click PANIC to sweep funds even with zero ETH.",
+    text: "Click PANIC to sweep funds with your tokens, even with zero ETH.",
     icon: Zap,
   },
 ];

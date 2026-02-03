@@ -36,6 +36,8 @@ type DashboardViewProps = {
   showSetupCard: boolean;
   safeAddress: string;
   resolvedSafeAddress?: Address;
+  ensName?: string;
+  ensRecords?: { key: string; label: string; value: string }[];
   safeAddressError?: string;
   isSavingSafeAddress: boolean;
   isApproving: boolean;
@@ -77,6 +79,8 @@ export function DashboardView({
   showSetupCard,
   safeAddress,
   resolvedSafeAddress,
+  ensName,
+  ensRecords,
   safeAddressError,
   isSavingSafeAddress,
   isApproving,
@@ -152,12 +156,34 @@ export function DashboardView({
           isConnected={isConnected}
           approvals={approvals}
           onRevoke={onRevoke}
+          onApproveAll={onApprove}
           onSwitchNetwork={() => openChainModal?.()}
           onRefresh={onRefresh}
           history={history}
           explorerBaseUrl={explorerBaseUrl}
         />
         <div className="flex flex-col gap-6">
+          {ensRecords && ensRecords.length > 0 && (
+            <div className="rounded-xl border border-red-600/30 bg-black px-4 py-3 text-white">
+              <div className="text-xs font-semibold uppercase tracking-wide text-red-200">
+                ENS Emergency Records
+              </div>
+              <div className="mt-2 space-y-1 text-sm text-white/80">
+                {ensRecords
+                  .filter(
+                    (record) =>
+                      record.key === "com.panic.safe" ||
+                      record.key === "com.panic.guardian"
+                  )
+                  .map((record) => (
+                    <div key={record.key} className="flex items-center justify-between gap-3">
+                      <span className="text-white/60">{record.label}</span>
+                      <span className="truncate text-white">{record.value}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
           {isSetupComplete && (
             <PanicCard
               panicStatus={panicStatus}
@@ -185,6 +211,8 @@ export function DashboardView({
               isOnTargetNetwork={isOnTargetNetwork}
               safeAddress={safeAddress}
               resolvedSafeAddress={resolvedSafeAddress}
+              ensName={ensName}
+              ensRecords={ensRecords}
               safeAddressError={safeAddressError}
               isSavingSafeAddress={isSavingSafeAddress}
               isApproving={isApproving}
