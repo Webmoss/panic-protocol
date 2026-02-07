@@ -26,7 +26,9 @@ import { buildTokenList, getUsdcAddress } from "~/lib/tokens";
 
 export function Welcome() {
 
-  const isProduction = import.meta.env.PROD;
+  // In production, set VITE_USE_TESTNET=true (e.g. in Netlify env) to show Sepolia for demos.
+  const isProduction =
+    import.meta.env.PROD && import.meta.env.VITE_USE_TESTNET !== "true";
   const explorerBaseUrl = isProduction
     ? "https://etherscan.io"
     : "https://sepolia.etherscan.io";

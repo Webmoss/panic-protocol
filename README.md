@@ -77,7 +77,7 @@ The repo includes a `netlify.toml` for static (SPA) deploy. Use these settings i
 | **Publish directory** | `build/client` |
 | **Functions directory** | *(leave empty)* |
 
-**Environment variables:** In Netlify → Site settings → Environment variables, add any `VITE_*` vars your app needs (e.g. `VITE_PANIC_SEPOLIA_ADDRESS`, `VITE_PANIC_VAULT_SEPOLIA_ADDRESS`, etc.). Use the same names as in `.env`; they are baked into the client bundle at build time.
+**Environment variables:** In Netlify → Site settings → Environment variables, add any `VITE_*` vars your app needs (e.g. `VITE_PANIC_SEPOLIA_ADDRESS`, `VITE_PANIC_VAULT_SEPOLIA_ADDRESS`, etc.). Use the same names as in `.env`; they are baked into the client bundle at build time. To **show testnet (Sepolia) on the production site** (e.g. for demos), set `VITE_USE_TESTNET=true`; the app will then target Sepolia and use Sepolia contract addresses instead of mainnet.
 
 ## Environment
 
