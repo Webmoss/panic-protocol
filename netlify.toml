@@ -1,5 +1,6 @@
 # Panic Protocol — Netlify
 # https://docs.netlify.com/configure-builds/file-based-configuration/
+# In Netlify UI set Base directory to empty (not build/client). Publish directory = build/client.
 
 [build]
   command = "npm run build"
