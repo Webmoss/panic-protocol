@@ -1,5 +1,4 @@
 import type { Address } from "viem";
-import type { ReactNode } from "react";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -13,8 +12,6 @@ type DashboardViewProps = {
   isOnTargetNetwork: boolean;
   targetNetworkLabel: string;
   openChainModal?: () => void;
-  canExecute: boolean;
-  isSetupComplete: boolean;
   approvals: ApprovalItem[];
   onRevoke: (approval: { tokenAddress?: string; asset?: string }) => Promise<string | undefined>;
   onRefresh: () => void;
@@ -23,7 +20,6 @@ type DashboardViewProps = {
   panicStatus: "idle" | "signing" | "executing" | "done" | "error";
   panicTxHash?: string;
   onPanic: () => Promise<void>;
-  onPanicDirect: () => Promise<void>;
   hasEthBalance: boolean;
   networkLabel: string;
   address?: Address;
@@ -33,6 +29,8 @@ type DashboardViewProps = {
   panicBalance: string;
   approvalsCount: number;
   tokenBalances: { label: string; balance: string }[];
+  isSetupComplete: boolean;
+  needsPanicVaultApproval: boolean;
   showSetupCard: boolean;
   safeAddress: string;
   resolvedSafeAddress?: Address;
@@ -56,8 +54,6 @@ export function DashboardView({
   isOnTargetNetwork,
   targetNetworkLabel,
   openChainModal,
-  canExecute,
-  isSetupComplete,
   approvals,
   onRevoke,
   onRefresh,
@@ -66,7 +62,6 @@ export function DashboardView({
   panicStatus,
   panicTxHash,
   onPanic,
-  onPanicDirect,
   hasEthBalance,
   networkLabel,
   address,
@@ -76,6 +71,8 @@ export function DashboardView({
   panicBalance,
   approvalsCount,
   tokenBalances,
+  isSetupComplete,
+  needsPanicVaultApproval,
   showSetupCard,
   safeAddress,
   resolvedSafeAddress,
@@ -95,42 +92,6 @@ export function DashboardView({
 }: DashboardViewProps) {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 py-8">
-      <Card className="border-neutral-900 bg-black text-white">
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-x-4">
-          <div>
-            <h1 className="text-2xl font-black uppercase tracking-tight text-white">
-              Dashboard
-            </h1>
-            <p className="text-sm text-white/90">
-              Inspect and revoke risky approvals to secure your wallet from risk. Hit PANIC to secure your assets.
-            </p>
-          </div>
-          <div className="flex w-full flex-wrap justify-end gap-2 md:w-auto">
-            {canExecute && (
-              <>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="min-w-[160px] border-white text-black hover:bg-white/80"
-                  disabled={!isSetupComplete || !isOnTargetNetwork}
-                  onClick={onPanicDirect}
-                >
-                  SWEEP
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  className="min-w-[160px]"
-                  disabled={!isSetupComplete || !isOnTargetNetwork}
-                  onClick={onPanic}
-                >
-                  PANIC
-                </Button>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {isConnected && !isOnTargetNetwork && (
         <Alert variant="destructive" className="w-full">
@@ -156,7 +117,6 @@ export function DashboardView({
           isConnected={isConnected}
           approvals={approvals}
           onRevoke={onRevoke}
-          onApproveAll={onApprove}
           onSwitchNetwork={() => openChainModal?.()}
           onRefresh={onRefresh}
           history={history}
@@ -192,6 +152,10 @@ export function DashboardView({
               txHash={panicTxHash}
               explorerBaseUrl={explorerBaseUrl}
               disabled={!isOnTargetNetwork || !isConnected}
+              needsPanicVaultApproval={needsPanicVaultApproval}
+              onApprovePanicVault={onApprove}
+              isOnTargetNetwork={isOnTargetNetwork}
+              isApproving={isApproving}
             />
           )}
           <WalletStatusCard

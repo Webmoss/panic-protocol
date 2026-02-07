@@ -41,7 +41,6 @@ type ApprovalDashboardProps = {
   isConnected: boolean;
   approvals: ApprovalItem[];
   onRevoke?: (approval: ApprovalItem) => Promise<string | undefined>;
-  onApproveAll?: () => void;
   onSwitchNetwork?: () => void;
   onRefresh?: () => void;
   history?: ApprovalHistoryItem[];
@@ -61,7 +60,6 @@ export function ApprovalDashboard({
   isConnected,
   approvals,
   onRevoke,
-  onApproveAll,
   onSwitchNetwork,
   onRefresh,
   history = [],
@@ -151,15 +149,6 @@ export function ApprovalDashboard({
             <CardTitle className="text-lg font-black uppercase tracking-tight">Approvals</CardTitle>
           </div>
           <div className="flex items-center gap-2">
-            {isConnected && (
-              <Button
-                variant="outline"
-                disabled={!isOnTargetNetwork || !onApproveAll}
-                onClick={onApproveAll}
-              >
-                Approve Panic Vault
-              </Button>
-            )}
             {onRefresh && (
               <Button variant="outline" onClick={onRefresh}>
                 Refresh

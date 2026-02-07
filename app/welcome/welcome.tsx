@@ -175,6 +175,8 @@ export function Welcome() {
   const canExecute = isConnected && (hasEthBalance || hasOnchainPanicBalance);
   const isSetupComplete =
     hasPurchasedPanic && hasApprovedVault && hasSavedSafeAddress;
+  const needsPanicVaultApproval =
+    tokenStats.length > 0 && tokenStats.some(({ allowance }) => allowance === 0n);
   const showWrongNetwork = isConnected && !isOnTargetNetwork;
   
   /* ENS Resolving */
@@ -386,7 +388,6 @@ export function Welcome() {
           isOnTargetNetwork={isOnTargetNetwork}
           targetNetworkLabel={targetNetworkLabel}
           openChainModal={openChainModal}
-          canExecute={canExecute}
           isSetupComplete={isSetupComplete}
           approvals={approvals}
           onRevoke={handleRevoke}
@@ -396,7 +397,6 @@ export function Welcome() {
           panicStatus={panicStatus}
           panicTxHash={panicTxHash}
           onPanic={handlePanicWithHistory}
-          onPanicDirect={handlePanicDirect}
           hasEthBalance={hasEthBalance}
           networkLabel={networkLabel}
           address={address}
@@ -406,6 +406,7 @@ export function Welcome() {
           panicBalance={panicBalance}
           approvalsCount={approvalsCount}
           tokenBalances={extraTokenBalances}
+          needsPanicVaultApproval={needsPanicVaultApproval}
           showSetupCard={isConnected && !isSetupComplete}
           safeAddress={safeAddress}
           resolvedSafeAddress={resolvedSafeAddress}
