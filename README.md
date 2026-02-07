@@ -13,7 +13,7 @@ Emergency stop button for hacked wallets that still works after your ETH is drai
 
 - **Stack:** React Router 7, React 19, TypeScript, Vite, Tailwind CSS 4
 - **UI:** Radix UI primitives, shadcn/ui (Button), Lucide icons, Tailwind + tw-animate
-- **Rendering:** Server-side rendering (SSR) by default; configurable in `react-router.config.ts`
+- **Rendering:** SPA mode (static build) for Netlify; configurable in `react-router.config.ts`
 
 ## Repository structure
 
@@ -65,6 +65,19 @@ Route types are generated under `.react-router/types/` (gitignored). Run `pnpm r
 - **Docker:** `docker build -t panic-protocol .` then `docker run -p 3000:3000 panic-protocol`
 
 The app can be deployed to any Node-friendly or Docker-friendly platform (e.g. AWS, GCP, Fly.io, Railway).
+
+## Deploy to Netlify
+
+The repo includes a `netlify.toml` for static (SPA) deploy. Use these settings in the Netlify UI:
+
+| Setting | Value |
+|--------|--------|
+| **Base directory** | *(leave empty)* |
+| **Build command** | `npm run build` |
+| **Publish directory** | `build/client` |
+| **Functions directory** | *(leave empty)* |
+
+**Environment variables:** In Netlify → Site settings → Environment variables, add any `VITE_*` vars your app needs (e.g. `VITE_PANIC_SEPOLIA_ADDRESS`, `VITE_PANIC_VAULT_SEPOLIA_ADDRESS`, etc.). Use the same names as in `.env`; they are baked into the client bundle at build time.
 
 ## Environment
 
