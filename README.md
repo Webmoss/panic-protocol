@@ -72,7 +72,7 @@ The repo includes a `netlify.toml` for static (SPA) deploy. Use these settings i
 
 | Setting | Value |
 |--------|--------|
-| **Base directory** | *(leave empty)* |
+| **Base directory** | *(leave empty — do not use `build/client` or config parse will fail)* |
 | **Build command** | `npm run build` |
 | **Publish directory** | `build/client` |
 | **Functions directory** | *(leave empty)* |

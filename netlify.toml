@@ -6,6 +6,10 @@
   command = "npm run build"
   publish = "build/client"
 
+# RainbowKit 2.x declares peer wagmi@^2; we use wagmi 3. Allow install to succeed.
+[build.environment]
+  NPM_FLAGS = "--legacy-peer-deps"
+
 # SPA: serve index.html for all routes so client-side routing works
 [[redirects]]
   from = "/*"
